@@ -1,0 +1,29 @@
+- hosts: masters
+  become: yes
+  tasks:
+    - name: Inicializa el cluster de k8s
+      shell: kubeadm init --pod-network-cidr=10.244.0.0/16 --apiserver-advertise-address=15.0.0.10 --ignore-preflight-errors=SystemVerification
+
+    - name: crea el directorio .kube
+      become: yes
+      become_user: ubuntu
+      file:
+        path: $HOME/.kube
+        state: directory
+        mode: 0755
+
+    - name: copia admin.conf al usuario de .kube config
+      copy:
+        src: /etc/kubernetes/admin.conf
+        dest: /home/ubuntu/.kube/config
+        remote_src: yes
+        owner: ubuntu
+    
+    - name: variable root kubeconfig
+      shell: export KUBECONFIG=/etc/kubernetes/admin.conf 
+
+    - name: instalar red de los Pod
+      #become: yes
+      #become_user: root
+      shell: kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/a70459be0084506e4ec919aa1c114638878db11b/Documentation/kube-flannel.yml
+      #shell: kubectl apply -f "https://cloud.weave.works/k8s/net?k8s-version=$(kubectl version | base64 | tr -d '\n')"
